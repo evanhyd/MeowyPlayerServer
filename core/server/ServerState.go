@@ -40,7 +40,7 @@ func (s *ServerState) ServerStats(resp http.ResponseWriter, req *http.Request) {
 func (s *ServerState) ServerList(resp http.ResponseWriter, req *http.Request) {
 	s.record(req.URL.Path)
 
-	entries, err := os.ReadDir("core/resource")
+	entries, err := os.ReadDir(resource.CollectionPath())
 	assert.NoErr(err, "failed to list all the collections")
 
 	buffer := bytes.Buffer{}
@@ -58,7 +58,7 @@ func (s *ServerState) ServerCollection(resp http.ResponseWriter, req *http.Reque
 	s.record(req.URL.Path)
 
 	collectionName := req.URL.Query().Get("user")
-	data, err := os.ReadFile(resource.CollectionPath(collectionName)) //seems dangerous? can be abused with name="../fileName"
+	data, err := os.ReadFile(resource.CollectionFilePath(collectionName)) //seems dangerous? can be abused with name="../fileName"
 	assert.NoErr(err, fmt.Sprintf("failed to find collection: %v", collectionName))
 
 	_, err = resp.Write(data)

@@ -19,5 +19,5 @@ func main() {
 	http.HandleFunc("/collection", server.GetInstance().ServerCollection)
 
 	fmt.Println("meowyplayer server is running...")
-	assert.NoErr(http.ListenAndServe("localhost:80", nil), "meowyplayer server has crashed")
+	assert.NoErr(http.ListenAndServe(":80", nil), "meowyplayer server has crashed")
 }

@@ -12,8 +12,12 @@ const (
 	collectionFileName   = "collection.json"
 )
 
-func CollectionPath(collectionName string) string {
-	return filepath.Join(collectionFolderPath, collectionName, collectionFileName)
+func CollectionPath() string {
+	return collectionFolderPath
+}
+
+func CollectionFilePath(userName string) string {
+	return filepath.Join(collectionFolderPath, userName, collectionFileName)
 }
 
 func MakeNecessaryPath() {
