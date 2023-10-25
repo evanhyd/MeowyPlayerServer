@@ -8,18 +8,17 @@ import (
 )
 
 const (
-	collectionFolderPath = "collection"
-	collectionFileName   = "collection.json"
+	userFolder = "user"
 )
 
-func CollectionPath() string {
-	return collectionFolderPath
+func UserPath() string {
+	return userFolder
 }
 
-func CollectionFilePath(userName string) string {
-	return filepath.Join(collectionFolderPath, userName, collectionFileName)
+func CollectionPath(userName string) string {
+	return filepath.Join(userFolder, userName)
 }
 
 func MakeNecessaryPath() {
-	assert.NoErr(os.MkdirAll(collectionFolderPath, 0777), "failed to create collection folder")
+	assert.NoErr(os.MkdirAll(userFolder, 0777), "failed to create user folder")
 }

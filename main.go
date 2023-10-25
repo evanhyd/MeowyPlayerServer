@@ -16,7 +16,7 @@ func main() {
 
 	http.HandleFunc("/stats", server.GetInstance().ServerStats)
 	http.HandleFunc("/list", server.GetInstance().ServerList)
-	http.HandleFunc("/collection", server.GetInstance().ServerCollection)
+	http.HandleFunc("/download", server.GetInstance().ServerDownload)
 
 	fmt.Println("meowyplayer server is running...")
 	assert.NoErr(http.ListenAndServe(":80", nil), "meowyplayer server has crashed")
