@@ -55,7 +55,7 @@ func (s *serverAnalytics) ServerStats(resp http.ResponseWriter, req *http.Reques
 		fallthrough
 	default:
 		slices.SortStableFunc(records, func(q1, q2 queryRecord) int {
-			return q1.count - q2.count
+			return q2.count - q1.count
 		})
 	}
 

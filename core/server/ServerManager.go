@@ -3,14 +3,12 @@ package server
 import (
 	"archive/zip"
 	"fmt"
-	"io"
 	"io/fs"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"meowyplayerserver.com/core/resource"
-	"meowyplayerserver.com/utility/assert"
+	"meowyplayerserver.com/utility/uzip"
 )
 
 type serverManager struct {
@@ -20,73 +18,81 @@ func makeServerManager() serverManager {
 	return serverManager{}
 }
 
-func (s *ServerState) ServerList(resp http.ResponseWriter, req *http.Request) {
+func (s *ServerState) isValidUser(user string) bool {
+	_, err := os.Stat(resource.CollectionPath(user))
+	return fs.ValidPath(user) && err == nil
+}
+
+func (s *ServerState) ServerUsers(resp http.ResponseWriter, req *http.Request) {
 	s.log(req.URL.Path)
 
 	entries, err := os.ReadDir(resource.UserPath())
-	assert.NoErr(err, "failed to read base users path")
+	if err != nil {
+		sendError(resp, http.StatusInternalServerError, fmt.Sprintf("%v: %v", err, "failed to read user path"))
+		return
+	}
 
 	for _, entry := range entries {
 		info, err := entry.Info()
-		assert.NoErr(err, "failed to read user info")
-
-		_, err = fmt.Fprintln(resp, info.Name(), info.ModTime().Format("2006-01-02 15:04"), info.Size())
-		assert.NoErr(err, "failed to print user info")
+		if err != nil {
+			sendError(resp, http.StatusInternalServerError, fmt.Sprintf("%v: %v", err, "failed to read user info"))
+			return
+		}
+		fmt.Fprintln(resp, info.Name(), info.ModTime().Format("2006-01-02 15:04"), info.Size())
 	}
 }
 
 func (s *ServerState) ServerDownload(resp http.ResponseWriter, req *http.Request) {
 	s.log(req.URL.Path)
 
-	//sanatize user name
-	//should be replaced by a more secure method
 	user := req.URL.Query().Get("user")
-	if !fs.ValidPath(user) {
-		sendError(resp, http.StatusNotFound, fmt.Errorf("invalid user name: %v", user), "failed to fetch user profile")
+	if !s.isValidUser(user) {
+		sendError(resp, http.StatusNotFound, fmt.Sprintf("invalid user id: %v", user))
 		return
 	}
 
-	//check if user exists
+	if err := uzip.Compress(resp, resource.CollectionPath(user)); err != nil {
+		sendError(resp, http.StatusInternalServerError, fmt.Sprintf("failed to compress: %v", user))
+	}
+}
+
+func (s *ServerState) ServerUpload(resp http.ResponseWriter, req *http.Request) {
+	s.log(req.URL.Path)
+
+	user := req.PostFormValue("user")
+	if !s.isValidUser(user) {
+		sendError(resp, http.StatusNotFound, fmt.Sprintf("invalid user id: %v", user))
+		return
+	}
 	collectionPath := resource.CollectionPath(user)
-	if _, err := os.Stat(collectionPath); err != nil {
-		sendError(resp, http.StatusNotFound, fmt.Errorf("invalid user name: %v", user), "failed to fetch user profile")
+
+	//reset user's collection directory
+	if err := os.RemoveAll(collectionPath); err != nil {
+		sendError(resp, http.StatusInternalServerError, fmt.Sprintf("failed to upload: %v", user))
 		return
 	}
 
-	//prepare zip
-	zipWriter := zip.NewWriter(resp)
-	defer zipWriter.Close()
-
-	addToZip := func(path string, info fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		//directory
-		if info.IsDir() {
-			_, err = zipWriter.Create(path + "/")
-			return err
-		}
-
-		//file
-		fileWriter, err := zipWriter.Create(path)
-		if err != nil {
-			return err
-		}
-
-		file, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-
-		_, err = io.Copy(fileWriter, file)
-		return err
+	if err := os.MkdirAll(collectionPath, 0777); err != nil {
+		sendError(resp, http.StatusInternalServerError, fmt.Sprintf("failed to upload: %v", user))
+		return
 	}
 
-	//compress files into the zip buffer
-	if err := filepath.WalkDir(collectionPath, addToZip); err != nil {
-		sendError(resp, http.StatusNotFound, err, "failed to download "+user+" collection")
+	//extract the file
+	files, fileHeaders, err := req.FormFile("collection")
+	if err != nil {
+		sendError(resp, http.StatusNotFound, fmt.Sprintf("failed to parse the collection file: %v", fileHeaders))
+		return
+	}
+	defer files.Close()
+
+	zipHandle, err := zip.NewReader(files, fileHeaders.Size)
+	if err != nil {
+		sendError(resp, http.StatusInternalServerError, fmt.Sprintf("failed to upload: %v", user))
+		return
+	}
+
+	if err := uzip.Extract(collectionPath, zipHandle); err != nil {
+		sendError(resp, http.StatusInternalServerError, fmt.Sprintf("failed to upload: %v", user))
 		return
 	}
 }
