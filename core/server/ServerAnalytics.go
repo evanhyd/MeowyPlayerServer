@@ -6,8 +6,6 @@ import (
 	"slices"
 	"strings"
 	"sync"
-
-	"meowyplayerserver.com/utility/assert"
 )
 
 type queryRecord struct {
@@ -60,7 +58,6 @@ func (s *serverAnalytics) ServerStats(resp http.ResponseWriter, req *http.Reques
 	}
 
 	for _, record := range records {
-		_, err := fmt.Fprintf(resp, "%v: %v\n", record.query, record.count)
-		assert.NoErr(err, "failed to print analytics stats")
+		fmt.Fprintf(resp, "%v: %v\n", record.query, record.count)
 	}
 }

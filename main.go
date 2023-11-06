@@ -15,9 +15,9 @@ func main() {
 	resource.MakeNecessaryPath()
 
 	http.HandleFunc("/stats", server.GetInstance().ServerStats)
-	http.HandleFunc("/users", server.GetInstance().ServerUsers)
-	http.HandleFunc("/download", server.GetInstance().ServerDownload)
-	http.HandleFunc("/upload", server.GetInstance().ServerUpload)
+	http.HandleFunc("/list", server.GetInstance().ServerRequestList)
+	http.HandleFunc("/upload", server.GetInstance().ServerRequestUpload)
+	http.HandleFunc("/download", server.GetInstance().ServerRequestDownload)
 
 	fmt.Println("meowyplayer server is running...")
 	assert.NoErr(http.ListenAndServe(":80", nil), "meowyplayer server has crashed")
