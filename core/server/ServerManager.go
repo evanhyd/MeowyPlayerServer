@@ -105,8 +105,8 @@ func (s *Server) ServerRequestRemove(resp http.ResponseWriter, req *http.Request
 	}
 
 	mux := s.getMux(collection)
-	mux.RLock()
-	defer mux.RUnlock()
+	mux.Lock()
+	defer mux.Unlock()
 
 	if err := os.RemoveAll(filepath.Join(resource.CollectionPath(), collection)); err != nil {
 		sendError(resp, http.StatusInternalServerError, err.Error()+" - failed to remove the collection: "+collection)
