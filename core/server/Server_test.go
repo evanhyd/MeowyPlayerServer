@@ -6,7 +6,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"meowyplayerserver.com/core/resource"
@@ -45,7 +44,7 @@ func TestUpload(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	data, err := os.ReadFile(filepath.Join(resource.CollectionPath(), kTestFile))
+	data, err := os.ReadFile(resource.CollectionFile(kTestFile))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,12 +70,34 @@ func TestDownload(t *testing.T) {
 	}
 }
 
+func TestRemove(t *testing.T) {
+	resource.MakeNecessaryPath()
+	defer os.RemoveAll(resource.CollectionPath())
+
+	go startTestServer()
+	if err := uploadTestFile(); err != nil {
+		t.Fatal(err)
+	}
+	_, err := os.Stat(resource.CollectionFile(kTestFile))
+	if os.IsNotExist(err) {
+		t.Fail()
+	}
+	if err := removeTestFile(); err != nil {
+		t.Fatal(err)
+	}
+	_, err = os.Stat(resource.CollectionFile(kTestFile))
+	if !os.IsNotExist(err) {
+		t.Fail()
+	}
+}
+
 func startTestServer() {
 	s := MakeServer()
 	http.HandleFunc("/stats", s.ServerStats)
 	http.HandleFunc("/list", s.ServerRequestList)
 	http.HandleFunc("/upload", s.ServerRequestUpload)
 	http.HandleFunc("/download", s.ServerRequestDownload)
+	http.HandleFunc("/remove", s.ServerRequestRemove)
 	http.ListenAndServe("localhost:80", nil)
 }
 
@@ -112,4 +133,21 @@ func downloadTestFile() ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	return io.ReadAll(resp.Body)
+}
+
+func removeTestFile() error {
+	//prepare the fields
+	fieldBody := bytes.Buffer{}
+	fieldWriter := multipart.NewWriter(&fieldBody)
+	fieldWriter.WriteField("collection", kTestFile)
+	fieldWriter.Close()
+
+	//send post
+	resp, err := http.Post(kServerUrl+"/remove", fieldWriter.FormDataContentType(), &fieldBody)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	io.Copy(os.Stdout, resp.Body)
+	return nil
 }

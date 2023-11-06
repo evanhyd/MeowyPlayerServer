@@ -2,6 +2,7 @@ package resource
 
 import (
 	"os"
+	"path/filepath"
 
 	"meowyplayerserver.com/utility/assert"
 )
@@ -12,6 +13,10 @@ const (
 
 func CollectionPath() string {
 	return collectionPath
+}
+
+func CollectionFile(collection string) string {
+	return filepath.Join(collectionPath, collection)
 }
 
 func MakeNecessaryPath() {

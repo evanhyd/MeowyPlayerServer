@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"regexp"
 	"sync"
 
@@ -64,7 +63,7 @@ func (s *Server) ServerRequestUpload(resp http.ResponseWriter, req *http.Request
 	mux.Lock()
 	defer mux.Unlock()
 
-	file, err := os.OpenFile(filepath.Join(resource.CollectionPath(), fileHeaders.Filename), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
+	file, err := os.OpenFile(resource.CollectionFile(fileHeaders.Filename), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
 	if err != nil {
 		sendError(resp, http.StatusInternalServerError, err.Error()+" - failed to create the collection: "+fileHeaders.Filename)
 		return
@@ -86,7 +85,7 @@ func (s *Server) ServerRequestDownload(resp http.ResponseWriter, req *http.Reque
 	mux.RLock()
 	defer mux.RUnlock()
 
-	file, err := os.Open(filepath.Join(resource.CollectionPath(), collection))
+	file, err := os.Open(resource.CollectionFile(collection))
 	if err != nil {
 		sendError(resp, http.StatusInternalServerError, err.Error()+" - failed to download the collection: "+collection)
 		return
@@ -108,7 +107,7 @@ func (s *Server) ServerRequestRemove(resp http.ResponseWriter, req *http.Request
 	mux.Lock()
 	defer mux.Unlock()
 
-	if err := os.RemoveAll(filepath.Join(resource.CollectionPath(), collection)); err != nil {
+	if err := os.RemoveAll(resource.CollectionFile(collection)); err != nil {
 		sendError(resp, http.StatusInternalServerError, err.Error()+" - failed to remove the collection: "+collection)
 	}
 }
