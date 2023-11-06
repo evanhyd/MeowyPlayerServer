@@ -21,62 +21,18 @@ const (
 func TestCollectionValidator(t *testing.T) {
 	s := MakeServer()
 
-	//valid
-	if !s.isValidCollection("a.zip") {
-		t.Fail()
-	}
-	if !s.isValidCollection("a.txt") {
-		t.Fail()
-	}
-	if !s.isValidCollection("a.json") {
-		t.Fail()
+	validName := []string{"a.zip", "a.txt", "a.json"}
+	for _, name := range validName {
+		if !s.isValidCollection(name) {
+			t.Fatalf("expected valid but not: %v", name)
+		}
 	}
 
-	//invalid
-	if s.isValidCollection("") {
-		t.Fail()
-	}
-	if s.isValidCollection(" ") {
-		t.Fail()
-	}
-	if s.isValidCollection(".") {
-		t.Fail()
-	}
-	if s.isValidCollection("..") {
-		t.Fail()
-	}
-	if s.isValidCollection("/a") {
-		t.Fail()
-	}
-	if s.isValidCollection("/a/b") {
-		t.Fail()
-	}
-	if s.isValidCollection("a/") {
-		t.Fail()
-	}
-	if s.isValidCollection("a/b") {
-		t.Fail()
-	}
-	if s.isValidCollection(".zip") {
-		t.Fail()
-	}
-	if s.isValidCollection("a.sh") {
-		t.Fail()
-	}
-	if s.isValidCollection("a.zip.txt") {
-		t.Fail()
-	}
-	if s.isValidCollection("/") {
-		t.Fail()
-	}
-	if s.isValidCollection(`\`) {
-		t.Fail()
-	}
-	if s.isValidCollection("\a") {
-		t.Fail()
-	}
-	if s.isValidCollection("\n") {
-		t.Fail()
+	invalidName := []string{"", " ", ".", "..", "/a", "/a/b", "a/", "a/b", ".zip", "a.sh", "a.zip.txt", "/", `\`, "\a", "\n"}
+	for _, name := range invalidName {
+		if s.isValidCollection(name) {
+			t.Fatalf("expected invalid but not: %v", name)
+		}
 	}
 }
 
@@ -144,6 +100,7 @@ func uploadTestFile() error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	io.Copy(os.Stdout, resp.Body)
 	return nil
 }
