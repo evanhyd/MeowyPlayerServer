@@ -6,7 +6,6 @@ import (
 
 	"meowyplayerserver.com/core/resource"
 	"meowyplayerserver.com/core/server"
-	"meowyplayerserver.com/utility/assert"
 	"meowyplayerserver.com/utility/logger"
 )
 
@@ -21,5 +20,6 @@ func main() {
 	http.HandleFunc("/remove", server.GetInstance().ServerRequestRemove)
 
 	fmt.Println("meowyplayer server is running...")
-	assert.NoErr(http.ListenAndServe(":80", nil), "meowyplayer server has crashed")
+	err := http.ListenAndServe(":80", nil)
+	logger.Error(err, 0)
 }

@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"meowyplayerserver.com/utility/assert"
+	"meowyplayerserver.com/utility/logger"
 )
 
 const (
@@ -20,5 +20,7 @@ func CollectionFile(collection string) string {
 }
 
 func MakeNecessaryPath() {
-	assert.NoErr(os.MkdirAll(CollectionPath(), 0777), "failed to create collection path")
+	if err := os.MkdirAll(CollectionPath(), 0777); err != nil {
+		logger.Error(err, 0)
+	}
 }

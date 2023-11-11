@@ -1,7 +1,7 @@
 package server
 
 import (
-	"fmt"
+	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -39,14 +39,16 @@ func (s *Server) ServerRequestList(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	infos := make([]resource.CollectionInfo, 0, len(entries))
 	for _, entry := range entries {
 		info, err := entry.Info()
 		if err != nil {
 			sendError(resp, http.StatusInternalServerError, err.Error()+" - failed to read entry info: "+entry.Name())
 			return
 		}
-		fmt.Fprintln(resp, info.Name(), info.ModTime().Format("2006-01-02 15:04"), info.Size())
+		infos = append(infos, resource.CollectionInfo{Title: info.Name(), Date: info.ModTime(), Size: info.Size()})
 	}
+	json.NewEncoder(resp).Encode(infos)
 }
 
 func (s *Server) ServerRequestUpload(resp http.ResponseWriter, req *http.Request) {
@@ -91,6 +93,7 @@ func (s *Server) ServerRequestDownload(resp http.ResponseWriter, req *http.Reque
 		return
 	}
 	defer file.Close()
+
 	io.Copy(resp, file)
 }
 
