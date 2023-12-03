@@ -15,11 +15,15 @@ func TestRegister(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := authentication.RegisterAccount("UnboxTheCat", []byte("test")); err != nil {
+	if err := authentication.RegisterAccount("UnboxTheCat", []byte("test")); err == nil {
 		t.Fatal(err)
 	}
 
 	if !authentication.IsAccountExist("UnboxTheCat") {
+		t.Fatal()
+	}
+
+	if authentication.IsAccountExist("Guest") {
 		t.Fatal()
 	}
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"meowyplayerserver.com/core/analytics"
+	"meowyplayerserver.com/core/authentication"
 	"meowyplayerserver.com/core/collection"
 )
 
@@ -23,7 +24,7 @@ type Server struct {
 func (s *Server) ServerStats(resp http.ResponseWriter, req *http.Request) {
 	analytics.Log(req.URL.Path)
 
-	records := analytics.Read()
+	records := analytics.Stat()
 	switch req.URL.Query().Get("sort") {
 	case "title":
 		slices.SortStableFunc(records, func(r1, r2 analytics.Record) int {
@@ -54,19 +55,39 @@ func (s *Server) ServerList(resp http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(resp).Encode(infos)
 }
 
+func (s *Server) ServerRegister(resp http.ResponseWriter, req *http.Request) {
+	analytics.Log(req.URL.Path)
+
+	id := req.PostFormValue("id")
+	password := req.PostFormValue("password")
+	if id == "" || authentication.IsAccountExist(id) {
+		sendError(resp, http.StatusBadRequest, "user ID is invalid or has been registered")
+		return
+	}
+
+	if err := authentication.RegisterAccount(id, []byte(password)); err != nil {
+		sendError(resp, http.StatusBadRequest, err.Error())
+		return
+	}
+}
+
 func (s *Server) ServerUpload(resp http.ResponseWriter, req *http.Request) {
 	analytics.Log(req.URL.Path)
 
-	//to do: verify id
+	id := req.PostFormValue("id")
+	if !authentication.IsAccountExist(id) {
+		sendError(resp, http.StatusNotFound, "user id does not exist")
+		return
+	}
 
 	files, _, err := req.FormFile("collection")
 	if err != nil {
-		sendError(resp, http.StatusBadRequest, err.Error()+" - collection file is missing from the POST request")
+		sendError(resp, http.StatusBadRequest, err.Error()+" - missing collection file")
 		return
 	}
 	defer files.Close()
 
-	if err := collection.Update(files, "Guest"); err != nil {
+	if err := collection.Update(files, id); err != nil {
 		sendError(resp, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -75,9 +96,13 @@ func (s *Server) ServerUpload(resp http.ResponseWriter, req *http.Request) {
 func (s *Server) ServerDownload(resp http.ResponseWriter, req *http.Request) {
 	analytics.Log(req.URL.Path)
 
-	//to do: verify id
+	id := req.URL.Query().Get("id")
+	if !authentication.IsAccountExist(id) {
+		sendError(resp, http.StatusNotFound, "user id does not exist")
+		return
+	}
 
-	if err := collection.Fetch(resp, "Guest"); err != nil {
+	if err := collection.Fetch(resp, id); err != nil {
 		sendError(resp, http.StatusInternalServerError, err.Error())
 		return
 	}

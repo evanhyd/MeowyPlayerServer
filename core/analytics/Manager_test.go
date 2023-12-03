@@ -13,14 +13,14 @@ func TestLog(t *testing.T) {
 	defer os.RemoveAll(analytics.AnalyticsFile())
 
 	//
-	records := analytics.Read()
+	records := analytics.Stat()
 	if len(records) > 0 {
 		t.Fatal()
 	}
 
 	// hello: 1
 	analytics.Log("hello")
-	records = analytics.Read()
+	records = analytics.Stat()
 	if len(records) != 1 {
 		t.Fatal()
 	}
@@ -31,7 +31,7 @@ func TestLog(t *testing.T) {
 	// hello: 3
 	analytics.Log("hello")
 	analytics.Log("hello")
-	records = analytics.Read()
+	records = analytics.Stat()
 	if len(records) != 1 {
 		t.Fatal()
 	}
@@ -43,7 +43,7 @@ func TestLog(t *testing.T) {
 	// world: 2
 	analytics.Log("world")
 	analytics.Log("world")
-	records = analytics.Read()
+	records = analytics.Stat()
 	if len(records) != 2 {
 		t.Fatal()
 	}

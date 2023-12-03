@@ -1,10 +1,74 @@
 package collection_test
 
 import (
+	"bytes"
+	"os"
 	"testing"
 
 	"meowyplayerserver.com/core/collection"
 )
+
+func TestList(t *testing.T) {
+	collection.Initialize()
+	defer os.RemoveAll(collection.CollectionPath())
+
+	if err := os.WriteFile(collection.CollectionFile("UnboxTheCat"), []byte("test"), 0777); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(collection.CollectionFile("Guest"), []byte("test again"), 0777); err != nil {
+		t.Fatal(err)
+	}
+
+	list, err := collection.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(list) != 2 {
+		t.Fatal()
+	}
+
+	if !(list[0].Title == "UnboxTheCat.zip" && list[1].Title == "Guest.zip" || list[1].Title == "UnboxTheCat.zip" && list[0].Title == "Guest.zip") {
+		t.Fatal()
+	}
+}
+
+func TestUpdate(t *testing.T) {
+	collection.Initialize()
+	defer os.RemoveAll(collection.CollectionPath())
+
+	if err := collection.Update(bytes.NewReader([]byte("test")), "UnboxTheCat"); err != nil {
+		t.Fatal(err)
+	}
+
+	list, err := collection.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(list) != 1 {
+		t.Fatal()
+	}
+}
+
+func TestFetch(t *testing.T) {
+	collection.Initialize()
+	defer os.RemoveAll(collection.CollectionPath())
+
+	if err := os.WriteFile(collection.CollectionFile("UnboxTheCat"), []byte("test"), 0777); err != nil {
+		t.Fatal(err)
+	}
+
+	buffer := bytes.Buffer{}
+	if err := collection.Fetch(&buffer, "UnboxTheCat"); err != nil {
+		t.Fatal(err)
+	}
+
+	if buffer.String() != "test" {
+		t.Fatal()
+	}
+}
 
 func TestFileNameValidator(t *testing.T) {
 	validName := []string{

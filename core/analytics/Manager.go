@@ -52,7 +52,7 @@ func Log(action string) error {
 	return save()
 }
 
-func Read() []Record {
+func Stat() []Record {
 	instance.mux.RLock()
 	defer instance.mux.RUnlock()
 
