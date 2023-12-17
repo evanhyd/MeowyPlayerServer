@@ -43,12 +43,9 @@ func Initialize() error {
 	return load()
 }
 
-func RegisterAccount(id string, plainPassword []byte) error {
-	instance.mux.Lock()
-	defer instance.mux.Unlock()
-
-	if _, ok := instance.accounts[id]; ok {
-		return fmt.Errorf("user ID %v is already registered", id)
+func RegisterAccount(username string, password string) error {
+	if !isUserValid(username) || IsUserExist(username) {
+		return fmt.Errorf("username %v is invalid or registered", username)
 	}
 
 	salt := make([]byte, saltLength)
@@ -56,34 +53,36 @@ func RegisterAccount(id string, plainPassword []byte) error {
 		return err
 	}
 
-	instance.accounts[id] = account{id, salt, computeHash(plainPassword, salt)}
+	instance.mux.Lock()
+	instance.accounts[username] = account{username, salt, computeHash([]byte(password), salt)}
+	instance.mux.Unlock()
+
 	return save()
 }
 
-func IsValidID(id string) bool {
-	return idValidator.MatchString(id)
+func isUserValid(username string) bool {
+	return usernameValidator.MatchString(username)
 }
 
-func IsAccountExist(id string) bool {
+func IsUserExist(username string) bool {
 	instance.mux.RLock()
-	defer instance.mux.RUnlock()
-
-	_, ok := instance.accounts[id]
+	_, ok := instance.accounts[username]
+	instance.mux.RUnlock()
 	return ok
 }
 
-func IsPasswordMatch(id string, plainPassword []byte) bool {
+func IsGoodAuth(username string, password string) bool {
 	instance.mux.RLock()
-	defer instance.mux.RUnlock()
+	account, ok := instance.accounts[username]
+	instance.mux.RUnlock()
 
-	account, ok := instance.accounts[id]
 	if !ok {
 		return false
 	}
-	return slices.Equal(account.Hash, computeHash(plainPassword, account.Salt))
+	return slices.Equal(account.Hash, computeHash([]byte(password), account.Salt))
 }
 
-func computeHash(plainPassword []byte, salt []byte) []byte {
-	hash := sha256.Sum256(append(plainPassword, salt...))
+func computeHash(password []byte, salt []byte) []byte {
+	hash := sha256.Sum256(append(password, salt...))
 	return hash[:]
 }

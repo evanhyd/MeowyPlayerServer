@@ -10,7 +10,7 @@ import (
 var instance manager
 
 type manager struct {
-	mux sync.Map //id -> *sync.RWMutex, guard file read/write
+	collections sync.Map //id -> *sync.RWMutex, guard file read/write
 }
 
 func Initialize() error {
@@ -18,7 +18,7 @@ func Initialize() error {
 }
 
 func getMux(id string) *sync.RWMutex {
-	rwMux, _ := instance.mux.LoadOrStore(id, &sync.RWMutex{})
+	rwMux, _ := instance.collections.LoadOrStore(id, &sync.RWMutex{})
 	return rwMux.(*sync.RWMutex)
 }
 

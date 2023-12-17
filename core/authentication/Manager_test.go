@@ -1,60 +1,58 @@
-package authentication_test
+package authentication
 
 import (
 	"os"
 	"testing"
-
-	"meowyplayerserver.com/core/authentication"
 )
 
 func TestRegister(t *testing.T) {
-	authentication.Initialize()
-	defer os.RemoveAll(authentication.AccountFile())
+	Initialize()
+	defer os.RemoveAll(AccountFile())
 
-	if err := authentication.RegisterAccount("UnboxTheCat", []byte("test")); err != nil {
+	if err := RegisterAccount("UnboxTheCat", "test"); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := authentication.RegisterAccount("UnboxTheCat", []byte("test")); err == nil {
+	if err := RegisterAccount("UnboxTheCat", "test"); err == nil {
 		t.Fatal(err)
 	}
 
-	if !authentication.IsAccountExist("UnboxTheCat") {
+	if !IsUserExist("UnboxTheCat") {
 		t.Fatal()
 	}
 
-	if authentication.IsAccountExist("Guest") {
+	if IsUserExist("Guest") {
 		t.Fatal()
 	}
 
-	if authentication.IsAccountExist("") {
+	if IsUserExist("") {
 		t.Fatal()
 	}
 }
 
 func TestPassword(t *testing.T) {
-	authentication.Initialize()
-	defer os.RemoveAll(authentication.AccountFile())
+	Initialize()
+	defer os.RemoveAll(AccountFile())
 
-	if err := authentication.RegisterAccount("UnboxTheCat", []byte("test")); err != nil {
+	if err := RegisterAccount("UnboxTheCat", "test"); err != nil {
 		t.Fatal(err)
 	}
 
-	if authentication.IsPasswordMatch("UnboxTheCat", []byte("abc")) {
+	if IsGoodAuth("UnboxTheCat", "abc") {
 		t.Fatal()
 	}
 
-	if !authentication.IsPasswordMatch("UnboxTheCat", []byte("test")) {
+	if !IsGoodAuth("UnboxTheCat", "test") {
 		t.Fatal()
 	}
 
-	if authentication.IsPasswordMatch("Guest", []byte("test")) {
+	if IsGoodAuth("Guest", "test") {
 		t.Fatal()
 	}
 }
 
-func TestIDValidator(t *testing.T) {
-	badID := []string{
+func TestUsernameValidator(t *testing.T) {
+	badUsername := []string{
 		"",        //no name
 		" ",       //space
 		"(abc",    //bad prefix
@@ -63,7 +61,7 @@ func TestIDValidator(t *testing.T) {
 		"abc(123", //bad character in the middle
 	}
 
-	goodID := []string{
+	goodUsername := []string{
 		"abc",         //letter only
 		"123",         //digit only
 		"abc123",      //letter + digit
@@ -74,15 +72,15 @@ func TestIDValidator(t *testing.T) {
 		"-_-",         //-_-
 	}
 
-	for _, id := range badID {
-		if authentication.IsValidID(id) {
-			t.Errorf("failed, expected bad ID: %v", id)
+	for _, username := range badUsername {
+		if isUserValid(username) {
+			t.Errorf("isValidUser(%v) = true, wanted false", username)
 		}
 	}
 
-	for _, id := range goodID {
-		if !authentication.IsValidID(id) {
-			t.Errorf("failed, expected good ID: %v", id)
+	for _, username := range goodUsername {
+		if !isUserValid(username) {
+			t.Errorf("isValidUser(%v) = false, wanted true", username)
 		}
 	}
 }

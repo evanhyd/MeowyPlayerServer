@@ -12,10 +12,10 @@ import (
 	"meowyplayerserver.com/core/collection"
 )
 
-var state = Server{}
+var instance = Server{}
 
-func GetInstance() *Server {
-	return &state
+func Instance() *Server {
+	return &instance
 }
 
 type Server struct {
@@ -58,15 +58,9 @@ func (s *Server) ServerList(resp http.ResponseWriter, req *http.Request) {
 func (s *Server) ServerRegister(resp http.ResponseWriter, req *http.Request) {
 	analytics.Log(req.URL.Path)
 
-	id := req.PostFormValue("id")
-	password := req.PostFormValue("password")
-	if id == "" || authentication.IsAccountExist(id) {
-		sendError(resp, http.StatusBadRequest, "user ID is invalid or has been registered")
-		return
-	}
-
-	if err := authentication.RegisterAccount(id, []byte(password)); err != nil {
-		sendError(resp, http.StatusBadRequest, err.Error())
+	username, password, _ := req.BasicAuth()
+	if err := authentication.RegisterAccount(username, password); err != nil {
+		sendError(resp, http.StatusNotFound, err.Error())
 		return
 	}
 }
@@ -74,9 +68,9 @@ func (s *Server) ServerRegister(resp http.ResponseWriter, req *http.Request) {
 func (s *Server) ServerUpload(resp http.ResponseWriter, req *http.Request) {
 	analytics.Log(req.URL.Path)
 
-	id := req.PostFormValue("id")
-	if !authentication.IsAccountExist(id) {
-		sendError(resp, http.StatusNotFound, "user id does not exist")
+	username, password, _ := req.BasicAuth()
+	if !authentication.IsGoodAuth(username, password) {
+		sendError(resp, http.StatusNotFound, "invalid username or password")
 		return
 	}
 
@@ -87,7 +81,7 @@ func (s *Server) ServerUpload(resp http.ResponseWriter, req *http.Request) {
 	}
 	defer files.Close()
 
-	if err := collection.Update(files, id); err != nil {
+	if err := collection.Update(files, username); err != nil {
 		sendError(resp, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -96,13 +90,19 @@ func (s *Server) ServerUpload(resp http.ResponseWriter, req *http.Request) {
 func (s *Server) ServerDownload(resp http.ResponseWriter, req *http.Request) {
 	analytics.Log(req.URL.Path)
 
-	id := req.URL.Query().Get("id")
-	if !authentication.IsAccountExist(id) {
-		sendError(resp, http.StatusNotFound, "user id does not exist")
+	username, password, _ := req.BasicAuth()
+	if !authentication.IsGoodAuth(username, password) {
+		sendError(resp, http.StatusNotFound, "invalid username or password")
 		return
 	}
 
-	if err := collection.Fetch(resp, id); err != nil {
+	collectionID := req.URL.Query().Get("collection")
+	if !authentication.IsUserExist(collectionID) {
+		sendError(resp, http.StatusNotFound, "invalid collection id")
+		return
+	}
+
+	if err := collection.Fetch(resp, collectionID); err != nil {
 		sendError(resp, http.StatusInternalServerError, err.Error())
 		return
 	}

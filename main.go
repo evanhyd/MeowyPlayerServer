@@ -17,10 +17,10 @@ func main() {
 	authentication.Initialize()
 	collection.Initialize()
 
-	http.HandleFunc("/stats", server.GetInstance().ServerStats)
-	http.HandleFunc("/list", server.GetInstance().ServerList)
-	http.HandleFunc("/upload", server.GetInstance().ServerUpload)
-	http.HandleFunc("/download", server.GetInstance().ServerDownload)
+	http.HandleFunc("/stats", server.Instance().ServerStats)
+	http.HandleFunc("/list", server.Instance().ServerList)
+	http.HandleFunc("/upload", server.Instance().ServerUpload)
+	http.HandleFunc("/download", server.Instance().ServerDownload)
 
 	log.Println("meowyplayer server is running...")
 	err := http.ListenAndServe(":80", nil)

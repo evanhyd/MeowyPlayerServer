@@ -5,12 +5,12 @@ import (
 )
 
 const (
-	accountFile = "account.json"
-	saltLength  = 32
-	idPattern   = `^[0-9A-Za-z\-_]+$`
+	accountFile     = "account.json"
+	saltLength      = 32
+	usernamePattern = `^[0-9A-Za-z\-_]+$`
 )
 
-var idValidator = regexp.MustCompile(idPattern)
+var usernameValidator = regexp.MustCompile(usernamePattern)
 
 func AccountFile() string {
 	return accountFile
