@@ -98,7 +98,7 @@ func (s *Server) ServerDownload(resp http.ResponseWriter, req *http.Request) {
 
 	collectionID := req.URL.Query().Get("collection")
 	if !authentication.IsUserExist(collectionID) {
-		sendError(resp, http.StatusNotFound, "invalid collection id")
+		sendError(resp, http.StatusNotFound, "invalid collection id "+collectionID)
 		return
 	}
 

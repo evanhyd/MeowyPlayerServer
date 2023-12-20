@@ -24,3 +24,5 @@ user/**
 collection/**
 *.json
 *.txt
+*.crt
+*.key

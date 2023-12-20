@@ -7,7 +7,7 @@ import (
 
 const (
 	collectionPath  = "collection"
-	fileNamePattern = `^[0-9A-Za-z\-_]+\.zip$`
+	fileNamePattern = `^[0-9A-Za-z\-_]+$`
 )
 
 var fileNameValidator = regexp.MustCompile(fileNamePattern)
@@ -17,5 +17,5 @@ func CollectionPath() string {
 }
 
 func CollectionFile(id string) string {
-	return filepath.Join(collectionPath, id+".zip")
+	return filepath.Join(collectionPath, id)
 }
