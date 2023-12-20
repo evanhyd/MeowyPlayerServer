@@ -1,6 +1,14 @@
-# MeowyPlayerServer
-MeowyPlayer backend. The server design is a proof of concept, and most likely suffers from all kinds of security exploits. Use it with cautious.
+# MeowyPlayer Server
+MeowyPlayer server backend.
 
+Features:
+* Register users
+* Download && Upload music collections
+* Trace persistent usage statistics
+* Support both HTTPS port 443 and HTTP port 80 (if SSL certificate is not available)
+ 
 # Build
-Require go 1.21.0+  
-- `go run main.go`  
+Requires go 1.21.0+  
+- `go run main.go -help` for more information
+
+  
