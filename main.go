@@ -18,8 +18,8 @@ var username string
 var password string
 
 func init() {
-	flag.BoolVar(&isHttps, "https", true, "uses https, requires valdi certificate")
-	flag.BoolVar(&isRegister, "register", false, "register a user, must supply -username and -password")
+	flag.BoolVar(&isHttps, "https", true, "uses https, requires a valid certificate")
+	flag.BoolVar(&isRegister, "register", false, "register a user, -username(must) and -password(optional)")
 	flag.StringVar(&username, "username", "", "username")
 	flag.StringVar(&password, "password", "", "password")
 }
