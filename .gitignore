@@ -20,9 +20,8 @@
 # Go workspace file
 go.work
 
-user/**
-collection/**
 *.json
 *.txt
+*.log
 *.crt
 *.key
