@@ -1,4 +1,4 @@
-package user
+package account
 
 import (
 	"encoding/json"
@@ -12,9 +12,9 @@ type accountStorage struct {
 	accounts   accountMap
 }
 
-func newAccountStorage() *accountStorage {
+func makeStorage() accountStorage {
 	const kAccountDir = "account.json"
-	return &accountStorage{accountDir: kAccountDir, accounts: accountMap{}}
+	return accountStorage{accountDir: kAccountDir, accounts: accountMap{}}
 }
 
 func (s *accountStorage) initialize() error {
@@ -37,17 +37,17 @@ func (s *accountStorage) save() error {
 }
 
 // Register an account. Return true if success.
-func (s *accountStorage) create(acc account) bool {
+func (s *accountStorage) create(acc Account) bool {
 	_, exist := s.accounts.LoadOrStore(acc.username, acc)
 	return !exist
 }
 
 // Get an account. Return true if exist.
-func (s *accountStorage) get(username string) (account, bool) {
+func (s *accountStorage) get(username string) (Account, bool) {
 	val, exist := s.accounts.Load(username)
-	acc := account{}
+	acc := Account{}
 	if exist {
-		acc = val.(account)
+		acc = val.(Account)
 	}
 	return acc, exist
 }

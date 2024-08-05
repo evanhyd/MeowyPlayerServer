@@ -1,29 +1,37 @@
-package user
+package account
 
 import (
 	"path/filepath"
 	"testing"
 )
 
-func newStubAccountStorage(t *testing.T) *accountStorage {
-	s := newAccountStorage()
+func makeStubAccountStorage(t *testing.T) accountStorage {
+	s := makeStorage()
 	s.accountDir = filepath.Join(t.TempDir(), s.accountDir)
 	return s
 }
 
 func TestAccountStorage_Create(t *testing.T) {
-	s := newStubAccountStorage(t)
-	if !s.create(account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
+	s := makeStubAccountStorage(t)
+	if err := s.initialize(); err != nil {
+		t.Fatal(err)
+	}
+
+	if !s.create(Account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
 		t.Fatal("create() = false, wanted true")
 	}
-	if s.create(account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
+	if s.create(Account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
 		t.Fatal("create() = true, wanted false")
 	}
 }
 
 func TestAccountStorage_Get(t *testing.T) {
-	s := newStubAccountStorage(t)
-	if !s.create(account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
+	s := makeStubAccountStorage(t)
+	if err := s.initialize(); err != nil {
+		t.Fatal(err)
+	}
+
+	if !s.create(Account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
 		t.Fatal("create() = false, wanted true")
 	}
 
@@ -37,18 +45,22 @@ func TestAccountStorage_Get(t *testing.T) {
 }
 
 func TestAccountStorage_Save(t *testing.T) {
-	s := newStubAccountStorage(t)
-	if !s.create(account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
+	s := makeStubAccountStorage(t)
+	if err := s.initialize(); err != nil {
+		t.Fatal(err)
+	}
+
+	if !s.create(Account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
 		t.Fatal("create() = false, wanted true")
 	}
-	if !s.create(account{username: "Guest", id: "id1", salt: []byte("salt1"), hash: []byte("hash1")}) {
+	if !s.create(Account{username: "Guest", id: "id1", salt: []byte("salt1"), hash: []byte("hash1")}) {
 		t.Fatal("create() = false, wanted true")
 	}
 	if err := s.save(); err != nil {
 		t.Fatal(err)
 	}
 
-	s1 := newStubAccountStorage(t)
+	s1 := makeStubAccountStorage(t)
 	s1.accountDir = s.accountDir
 	if err := s1.initialize(); err != nil {
 		t.Fatal(err)

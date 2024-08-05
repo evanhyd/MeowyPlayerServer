@@ -1,64 +1,64 @@
-package user
+package account
 
 import (
 	"testing"
 )
 
-func newStubAccountManager(t *testing.T) *userManager {
-	acc := NewUserManager()
-	acc.storage = newStubAccountStorage(t)
+func makeStubAccountComponent(t *testing.T) Component {
+	acc := MakeComponent()
+	acc.storage = makeStubAccountStorage(t)
 	return acc
 }
 
 func TestManager_Register(t *testing.T) {
-	manager := newStubAccountManager(t)
-	if err := manager.initialize(); err != nil {
+	comp := makeStubAccountComponent(t)
+	if err := comp.Initialize(); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := manager.register("UnboxTheCat", "test"); err != nil {
+	if err := comp.Register("UnboxTheCat", "test"); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := manager.register("UnboxTheCat", "test"); err == nil {
+	if err := comp.Register("UnboxTheCat", "test"); err == nil {
 		t.Fatal(err)
 	}
 
-	if err := manager.register("", "test"); err == nil {
+	if err := comp.Register("", "test"); err == nil {
 		t.Fatal(err)
 	}
 }
 
 func TestManager_Authorize(t *testing.T) {
-	manager := newStubAccountManager(t)
-	if err := manager.initialize(); err != nil {
+	comp := makeStubAccountComponent(t)
+	if err := comp.Initialize(); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := manager.register("UnboxTheCat", "test"); err != nil {
+	if err := comp.Register("UnboxTheCat", "test"); err != nil {
 		t.Fatal(err)
 	}
 
-	if !manager.authorize("UnboxTheCat", "test") {
+	if !comp.Authorize("UnboxTheCat", "test") {
 		t.Fatalf("authorize() = false, wanted true")
 	}
 
-	if manager.authorize("UnboxTheCat", "test1") {
+	if comp.Authorize("UnboxTheCat", "test1") {
 		t.Fatalf("authorize() = true, wanted false")
 	}
 
-	if manager.authorize("not_exist", "abc") {
+	if comp.Authorize("not_exist", "abc") {
 		t.Fatalf("authorize() = true, wanted false")
 	}
 
-	if manager.authorize("", "") {
+	if comp.Authorize("", "") {
 		t.Fatalf("authorize() = true, wanted false")
 	}
 }
 
 func TestManager_IsValidUsername(t *testing.T) {
-	manager := newStubAccountManager(t)
-	if err := manager.initialize(); err != nil {
+	comp := makeStubAccountComponent(t)
+	if err := comp.Initialize(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -83,13 +83,13 @@ func TestManager_IsValidUsername(t *testing.T) {
 	}
 
 	for _, username := range badUsername {
-		if manager.isValidUsername(username) {
+		if comp.isValidUsername(username) {
 			t.Errorf("isValidUser(%v) = true, wanted false", username)
 		}
 	}
 
 	for _, username := range goodUsername {
-		if !manager.isValidUsername(username) {
+		if !comp.isValidUsername(username) {
 			t.Errorf("isValidUser(%v) = false, wanted true", username)
 		}
 	}

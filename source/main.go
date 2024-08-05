@@ -4,7 +4,6 @@ import (
 	"flag"
 	"log"
 	"meowyplayerserver/api"
-	"meowyplayerserver/user"
 	"net/http"
 )
 
@@ -12,9 +11,10 @@ func main() {
 	isHttp := flag.Bool("http", false, "Use http insteaed of https.")
 	flag.Parse()
 
-	apiManager := api.NewAPIManager()
-	accountManager := user.NewUserManager()
-	apiManager.RegisterAPI("/register", accountManager.RegisterHandler)
+	apiManager := api.MakeAPIManager()
+	if err := apiManager.Initialize(); err != nil {
+		log.Fatalln(err)
+	}
 
 	var err error
 	if *isHttp {
