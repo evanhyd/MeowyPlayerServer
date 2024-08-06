@@ -2,16 +2,12 @@ package album
 
 import (
 	"encoding/json"
-	"sync"
 	"time"
 )
 
 // watch out path injection
 type AlbumKey string
 type MusicKey string
-
-func (k AlbumKey) IsEmpty() bool { return len(k) == 0 }
-func (k MusicKey) IsEmpty() bool { return len(k) == 0 }
 
 type Album struct {
 	key   AlbumKey
@@ -85,30 +81,5 @@ func (m *Music) UnmarshalJSON(data []byte) error {
 	}
 
 	*m = Music{time.Unix(buf.Date, 0), buf.Title, length, buf.Platform, buf.ID}
-	return nil
-}
-
-// id: album
-type albumMap struct {
-	sync.Map
-}
-
-func (m *albumMap) MarshalJSON() ([]byte, error) {
-	mp := map[string]Album{}
-	m.Range(func(key, value any) bool {
-		mp[key.(string)] = value.(Album)
-		return true
-	})
-	return json.Marshal(mp)
-}
-
-func (m *albumMap) UnmarshalJSON(data []byte) error {
-	mp := map[string]Album{}
-	if err := json.Unmarshal(data, &mp); err != nil {
-		return err
-	}
-	for key, val := range mp {
-		m.Store(key, val)
-	}
 	return nil
 }

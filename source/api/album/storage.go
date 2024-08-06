@@ -3,14 +3,12 @@ package album
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 )
 
 type albumStorage struct {
 	albumDir string
-	albums   albumMap
 	requests chan func()
 }
 
@@ -19,7 +17,7 @@ func makeStorage() albumStorage {
 		kAlbumDir         = "album"
 		kRequestQueueSize = 128
 	)
-	return albumStorage{albumDir: kAlbumDir, albums: albumMap{}, requests: make(chan func(), kRequestQueueSize)}
+	return albumStorage{albumDir: kAlbumDir, requests: make(chan func(), kRequestQueueSize)}
 }
 
 func (s *albumStorage) initialize() error {
@@ -38,7 +36,7 @@ func (s *albumStorage) getPath(key AlbumKey) string {
 	return filepath.Join(s.albumDir, fmt.Sprintf("%v.json", key))
 }
 
-func (s *albumStorage) syncUploadImpl(album Album) error {
+func (s *albumStorage) store(album Album) error {
 	data, err := json.Marshal(&album)
 	if err != nil {
 		return err
@@ -46,33 +44,33 @@ func (s *albumStorage) syncUploadImpl(album Album) error {
 	return os.WriteFile(s.getPath(album.key), data, 0600)
 }
 
-func (s *albumStorage) syncDownloadImpl(key AlbumKey) (album Album, err error) {
+func (s *albumStorage) load(key AlbumKey) (Album, error) {
 	data, err := os.ReadFile(s.getPath(key))
-	if err == nil {
-		err = json.Unmarshal(data, &album)
+	if err != nil {
+		return Album{}, err
 	}
-	return
+
+	var album Album
+	err = json.Unmarshal(data, &album)
+	return album, err
 }
 
-func (s *albumStorage) upload(w http.ResponseWriter, album Album) error {
+func (s *albumStorage) upload(album Album) error {
+	respC := make(chan error)
 	s.requests <- func() {
-		if err := s.syncUploadImpl(album); err != nil {
-			http.Error(w, fmt.Sprintf("[requestUpload] %v", err), http.StatusInternalServerError)
-		}
+		respC <- s.store(album)
 	}
-	return nil
+	return <-respC
 }
 
-func (s *albumStorage) download(w http.ResponseWriter, key AlbumKey) error {
+func (s *albumStorage) download(key AlbumKey) (Album, error) {
+	var album Album
+	var err error
+	readyC := make(chan struct{})
 	s.requests <- func() {
-		album, err := s.syncDownloadImpl(key)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("[requestDownload] %v", err), http.StatusInternalServerError)
-			return
-		}
-		if err := json.NewEncoder(w).Encode(&album); err != nil {
-			http.Error(w, fmt.Sprintf("[requestDownload] %v", err), http.StatusInternalServerError)
-		}
+		album, err = s.load(key)
+		readyC <- struct{}{}
 	}
-	return nil
+	<-readyC
+	return album, err
 }

@@ -2,7 +2,6 @@ package album
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/google/uuid"
 )
@@ -23,16 +22,16 @@ func (c *Component) isValidAlbumKey(key AlbumKey) bool {
 	return uuid.Validate(string(key)) == nil
 }
 
-func (c *Component) Upload(w http.ResponseWriter, album Album) error {
+func (c *Component) Upload(album Album) error {
 	if !c.isValidAlbumKey(album.Key()) {
-		return fmt.Errorf("nice try")
+		return fmt.Errorf("invalid album key %v", album.Key())
 	}
-	return c.storage.upload(w, album)
+	return c.storage.upload(album)
 }
 
-func (c *Component) Download(w http.ResponseWriter, key AlbumKey) error {
+func (c *Component) Download(key AlbumKey) (Album, error) {
 	if !c.isValidAlbumKey(key) {
-		return fmt.Errorf("you thought")
+		return Album{}, fmt.Errorf("invalid album key %v", key)
 	}
-	return c.storage.download(w, key)
+	return c.storage.download(key)
 }

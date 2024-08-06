@@ -3,13 +3,16 @@ package account
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"os"
+	"sync"
 )
 
 // Replace with DB if hardware allows
 type accountStorage struct {
 	accountDir string
 	accounts   accountMap
+	fileLock   sync.Mutex
 }
 
 func makeStorage() accountStorage {
@@ -29,6 +32,9 @@ func (s *accountStorage) initialize() error {
 }
 
 func (s *accountStorage) save() error {
+	s.fileLock.Lock()
+	defer s.fileLock.Unlock()
+
 	data, err := json.Marshal(&s.accounts)
 	if err != nil {
 		return err
@@ -37,13 +43,20 @@ func (s *accountStorage) save() error {
 }
 
 // Register an account. Return true if success.
-func (s *accountStorage) create(acc Account) bool {
-	_, exist := s.accounts.LoadOrStore(acc.username, acc)
-	return !exist
+func (s *accountStorage) store(acc Account) bool {
+	if _, exist := s.accounts.LoadOrStore(acc.username, acc); exist {
+		return false
+	}
+
+	if err := s.save(); err != nil {
+		log.Println(err)
+		return false
+	}
+	return true
 }
 
 // Get an account. Return true if exist.
-func (s *accountStorage) get(username string) (Account, bool) {
+func (s *accountStorage) load(username string) (Account, bool) {
 	val, exist := s.accounts.Load(username)
 	acc := Account{}
 	if exist {

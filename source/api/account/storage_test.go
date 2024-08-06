@@ -17,10 +17,10 @@ func TestAccountStorage_Create(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !s.create(Account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
+	if !s.store(Account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
 		t.Fatal("create() = false, wanted true")
 	}
-	if s.create(Account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
+	if s.store(Account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
 		t.Fatal("create() = true, wanted false")
 	}
 }
@@ -31,15 +31,15 @@ func TestAccountStorage_Get(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !s.create(Account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
+	if !s.store(Account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
 		t.Fatal("create() = false, wanted true")
 	}
 
-	if _, exist := s.get("UnboxTheCat"); !exist {
+	if _, exist := s.load("UnboxTheCat"); !exist {
 		t.Fatal("get() = false, wanted true")
 	}
 
-	if _, exist := s.get("nonamer"); exist {
+	if _, exist := s.load("nonamer"); exist {
 		t.Fatal("get() = true, wanted false")
 	}
 }
@@ -50,10 +50,10 @@ func TestAccountStorage_Save(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !s.create(Account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
+	if !s.store(Account{username: "UnboxTheCat", id: "id", salt: []byte("salt"), hash: []byte("hash")}) {
 		t.Fatal("create() = false, wanted true")
 	}
-	if !s.create(Account{username: "Guest", id: "id1", salt: []byte("salt1"), hash: []byte("hash1")}) {
+	if !s.store(Account{username: "Guest", id: "id1", salt: []byte("salt1"), hash: []byte("hash1")}) {
 		t.Fatal("create() = false, wanted true")
 	}
 	if err := s.save(); err != nil {
@@ -65,10 +65,10 @@ func TestAccountStorage_Save(t *testing.T) {
 	if err := s1.initialize(); err != nil {
 		t.Fatal(err)
 	}
-	if _, exist := s1.get("UnboxTheCat"); !exist {
+	if _, exist := s1.load("UnboxTheCat"); !exist {
 		t.Fatal("get() = false, wanted true")
 	}
-	if _, exist := s1.get("Guest"); !exist {
+	if _, exist := s1.load("Guest"); !exist {
 		t.Fatal("get() = false, wanted true")
 	}
 }

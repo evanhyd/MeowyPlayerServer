@@ -16,16 +16,23 @@ func TestManager_Register(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := comp.Register("UnboxTheCat", "test"); err != nil {
-		t.Fatal(err)
+	if !comp.Register("UnboxTheCat", "test") {
+		t.Error("Register() = false, expected true")
 	}
 
-	if err := comp.Register("UnboxTheCat", "test"); err == nil {
-		t.Fatal(err)
+	//username already exists
+	if comp.Register("UnboxTheCat", "test") {
+		t.Error("Register() = true, expected false")
 	}
 
-	if err := comp.Register("", "test"); err == nil {
-		t.Fatal(err)
+	//username is too short
+	if comp.Register("", "test") {
+		t.Error("Register() = true, expected false")
+	}
+
+	//username is too long
+	if comp.Register("0123456789abcdef0123456789abcdef", "test") {
+		t.Error("Register() = true, expected false")
 	}
 }
 
@@ -35,24 +42,28 @@ func TestManager_Authorize(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := comp.Register("UnboxTheCat", "test"); err != nil {
-		t.Fatal(err)
+	if !comp.Register("UnboxTheCat", "test") {
+		t.Error("Register() = false, expected true")
 	}
 
+	//normal login
 	if !comp.Authorize("UnboxTheCat", "test") {
-		t.Fatalf("authorize() = false, wanted true")
+		t.Fatalf("Authorize() = false, wanted true")
 	}
 
-	if comp.Authorize("UnboxTheCat", "test1") {
-		t.Fatalf("authorize() = true, wanted false")
+	//incorrect password
+	if comp.Authorize("UnboxTheCat", "abcdefghijkl") {
+		t.Fatalf("Authorize() = true, wanted false")
 	}
 
+	//login to non-existed user
 	if comp.Authorize("not_exist", "abc") {
-		t.Fatalf("authorize() = true, wanted false")
+		t.Fatalf("Authorize() = true, wanted false")
 	}
 
+	//missing username
 	if comp.Authorize("", "") {
-		t.Fatalf("authorize() = true, wanted false")
+		t.Fatalf("Authorize() = true, wanted false")
 	}
 }
 
@@ -63,23 +74,15 @@ func TestManager_IsValidUsername(t *testing.T) {
 	}
 
 	badUsername := []string{
-		"",        //no name
-		" ",       //space
-		"(abc",    //bad prefix
-		"abc)",    //bad suffix
-		"(abc)",   //bad pre/suffix
-		"abc(123", //bad character in the middle
+		"",                               //too short
+		"012345678901234567890123456789", //too long
 	}
 
 	goodUsername := []string{
-		"abc",         //letter only
-		"123",         //digit only
-		"abc123",      //letter + digit
-		"hello_world", //underscore
-		"hello-world", //dash
+		"abc123",      //average username
 		"UnboxTheCat", //my name
 		"__MAIN__",    //underscore pre/suffix
-		"-_-",         //-_-
+		"用户名",         //utf8
 	}
 
 	for _, username := range badUsername {

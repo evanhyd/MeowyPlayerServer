@@ -3,28 +3,22 @@ package account
 import (
 	"crypto/rand"
 	"crypto/sha256"
-	"fmt"
-	"regexp"
+	"log"
 	"slices"
 
 	"github.com/google/uuid"
 )
 
 type Component struct {
-	storage           accountStorage
-	usernameValidator *regexp.Regexp
-	saltLength        int
+	storage    accountStorage
+	saltLength int
 }
 
 func MakeComponent() Component {
-	const (
-		kUsernamePattern = `^[0-9A-Za-z\-_]+$`
-		kSaltLength      = 32
-	)
+	const kSaltLength = 32
 	return Component{
-		storage:           makeStorage(),
-		usernameValidator: regexp.MustCompile(kUsernamePattern),
-		saltLength:        kSaltLength,
+		storage:    makeStorage(),
+		saltLength: kSaltLength,
 	}
 }
 
@@ -33,7 +27,11 @@ func (c *Component) Initialize() error {
 }
 
 func (c *Component) isValidUsername(username string) bool {
-	return c.usernameValidator.MatchString(username)
+	const (
+		kMinLen = 1
+		kMaxLen = 24
+	)
+	return kMinLen <= len(username) && len(username) <= kMaxLen
 }
 
 func (c *Component) computeHash(password []byte, salt []byte) []byte {
@@ -42,7 +40,11 @@ func (c *Component) computeHash(password []byte, salt []byte) []byte {
 }
 
 func (c *Component) Authorize(username string, password string) bool {
-	acc, exist := c.storage.get(username)
+	if !c.isValidUsername(username) {
+		return false
+	}
+
+	acc, exist := c.storage.load(username)
 	if !exist {
 		return false
 	}
@@ -50,20 +52,17 @@ func (c *Component) Authorize(username string, password string) bool {
 	return slices.Equal(acc.hash, computedHash)
 }
 
-func (c *Component) Register(username string, password string) error {
+func (c *Component) Register(username string, password string) bool {
 	if !c.isValidUsername(username) {
-		return fmt.Errorf("username can only contain letters, numbers, underscore or dash")
+		return false
 	}
 
 	acc := Account{username: username, id: uuid.NewString()}
 	acc.salt = make([]byte, c.saltLength)
 	if _, err := rand.Read(acc.salt); err != nil {
-		return err
+		log.Println(err)
+		return false
 	}
 	acc.hash = c.computeHash([]byte(password), acc.salt)
-
-	if !c.storage.create(acc) {
-		return fmt.Errorf("username already exists")
-	}
-	return nil
+	return c.storage.store(acc)
 }

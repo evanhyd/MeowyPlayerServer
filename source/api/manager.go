@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"meowyplayerserver/api/account"
 	"meowyplayerserver/api/album"
 	"meowyplayerserver/api/logger"
@@ -44,18 +44,26 @@ func (m *apiManager) Initialize() error {
 	return nil
 }
 
+func (m *apiManager) authorize(r *http.Request) bool {
+	username := r.URL.User.Username()
+	password, _ := r.URL.User.Password()
+	return m.accountComponent.Authorize(username, password)
+}
+
 func (m *apiManager) statsHandler(w http.ResponseWriter, _ *http.Request) {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	if err := encoder.Encode(m.loggerComponent.GetRecords()); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
+		log.Println(err)
+		http.Error(w, "failed to download stats", http.StatusNotFound)
 	}
 }
 
 func (m *apiManager) logsHandler(w http.ResponseWriter, _ *http.Request) {
-	n, err := m.loggerComponent.DumpLog(w)
+	_, err := m.loggerComponent.DumpLog(w)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("[logsHandler] %v bytes sent, %v\n", n, err), http.StatusForbidden)
+		log.Println(err)
+		http.Error(w, "failed to download log", http.StatusNotFound)
 	}
 }
 
@@ -63,42 +71,58 @@ func (m *apiManager) registerHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.URL.User.Username()
 	password, ok := r.URL.User.Password()
 	if !ok {
-		http.Error(w, "[registerHandler] missing password field\n", http.StatusForbidden)
+		http.Error(w, "missing password field", http.StatusNotFound)
 		return
 	}
-	err := m.accountComponent.Register(username, password)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("[registerHandler] %v\n", err), http.StatusForbidden)
+
+	if !m.accountComponent.Register(username, password) {
+		http.Error(w, "username is too short or too long or already exists", http.StatusNotFound)
 	}
 }
 
 func (m *apiManager) uploadHandler(w http.ResponseWriter, r *http.Request) {
-	username := r.URL.User.Username()
-	password, _ := r.URL.User.Password()
-	if !m.accountComponent.Authorize(username, password) {
-		http.Error(w, "[uploadHandler] failed to authorize\n", http.StatusUnauthorized)
+	if !m.authorize(r) {
+		http.Error(w, "failed to authorize\n", http.StatusNotFound)
+		return
 	}
 
+	//decode client data
 	var album album.Album
 	defer r.Body.Close()
 	if err := json.NewDecoder(r.Body).Decode(&album); err != nil {
-		http.Error(w, fmt.Sprintf("[uploadHandler] failed to decode album data: %v\n", err), http.StatusInternalServerError)
+		log.Println(err)
+		http.Error(w, "failed to decode album data", http.StatusNotFound)
+		return
 	}
-	if err := m.albumComponent.Upload(w, album); err != nil {
-		http.Error(w, fmt.Sprintf("[uploadHandler] failed to upload album data: %v\n", err), http.StatusInternalServerError)
+
+	//upload to the storage
+	if err := m.albumComponent.Upload(album); err != nil {
+		log.Println(err)
+		http.Error(w, "failed to upload album data", http.StatusNotFound)
 	}
 }
 
 func (m *apiManager) downloadHandler(w http.ResponseWriter, r *http.Request) {
-	username := r.URL.User.Username()
-	password, _ := r.URL.User.Password()
-	if !m.accountComponent.Authorize(username, password) {
-		http.Error(w, "[downloadHandler] failed to authorize\n", http.StatusUnauthorized)
+	if !m.authorize(r) {
+		http.Error(w, "failed to authorize\n", http.StatusNotFound)
+		return
 	}
 
+	//get the album key
 	const kAlbumParameter = "albumKey"
-	key := r.URL.Query().Get(kAlbumParameter)
-	if err := m.albumComponent.Download(w, album.AlbumKey(key)); err != nil {
-		http.Error(w, fmt.Sprintf("[downloadHandler] failed to download album: %v\n", err), http.StatusInternalServerError)
+	key := album.AlbumKey(r.URL.Query().Get(kAlbumParameter))
+
+	//downlaod from the storage
+	album, err := m.albumComponent.Download(key)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "failed to download album", http.StatusNotFound)
+		return
+	}
+
+	//send to the client
+	if err := json.NewEncoder(w).Encode(&album); err != nil {
+		log.Println(err)
+		http.Error(w, "failed to download album", http.StatusNotFound)
 	}
 }
