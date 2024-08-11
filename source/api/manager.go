@@ -44,7 +44,7 @@ func (m *apiManager) Initialize() error {
 	return nil
 }
 
-func (m *apiManager) authorize(r *http.Request) bool {
+func (m *apiManager) authorize(r *http.Request) (account.UserID, bool) {
 	username := r.URL.User.Username()
 	password, _ := r.URL.User.Password()
 	return m.accountComponent.Authorize(username, password)
@@ -81,7 +81,8 @@ func (m *apiManager) registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *apiManager) uploadHandler(w http.ResponseWriter, r *http.Request) {
-	if !m.authorize(r) {
+	userID, ok := m.authorize(r)
+	if !ok {
 		http.Error(w, "failed to authorize\n", http.StatusNotFound)
 		return
 	}
@@ -96,24 +97,29 @@ func (m *apiManager) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//upload to the storage
-	if err := m.albumComponent.Upload(album); err != nil {
+	if err := m.albumComponent.Upload(userID, album); err != nil {
 		log.Println(err)
 		http.Error(w, "failed to upload album data", http.StatusNotFound)
 	}
 }
 
 func (m *apiManager) downloadHandler(w http.ResponseWriter, r *http.Request) {
-	if !m.authorize(r) {
-		http.Error(w, "failed to authorize\n", http.StatusNotFound)
+	userID, ok := m.authorize(r)
+	if !ok {
+		http.Error(w, "failed to authorize", http.StatusNotFound)
 		return
 	}
 
 	//get the album key
-	const kAlbumParameter = "albumKey"
-	key := album.AlbumKey(r.URL.Query().Get(kAlbumParameter))
+	const kAlbumKeyParam = "albumKey"
+	key, err := album.ParseAlbumKey(r.URL.Query().Get(kAlbumKeyParam))
+	if err != nil {
+		http.Error(w, "invalid album key", http.StatusNotFound)
+		return
+	}
 
 	//downlaod from the storage
-	album, err := m.albumComponent.Download(key)
+	album, err := m.albumComponent.Download(userID, key)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "failed to download album", http.StatusNotFound)
@@ -121,7 +127,7 @@ func (m *apiManager) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//send to the client
-	if err := json.NewEncoder(w).Encode(&album); err != nil {
+	if err := json.NewEncoder(w).Encode(album); err != nil {
 		log.Println(err)
 		http.Error(w, "failed to download album", http.StatusNotFound)
 	}

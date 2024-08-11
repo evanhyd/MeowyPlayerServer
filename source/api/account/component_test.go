@@ -16,6 +16,7 @@ func TestManager_Register(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	//normal registration
 	if !comp.Register("UnboxTheCat", "test") {
 		t.Error("Register() = false, expected true")
 	}
@@ -42,27 +43,28 @@ func TestManager_Authorize(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	//normal registration
 	if !comp.Register("UnboxTheCat", "test") {
 		t.Error("Register() = false, expected true")
 	}
 
 	//normal login
-	if !comp.Authorize("UnboxTheCat", "test") {
+	if _, ok := comp.Authorize("UnboxTheCat", "test"); !ok {
 		t.Fatalf("Authorize() = false, wanted true")
 	}
 
 	//incorrect password
-	if comp.Authorize("UnboxTheCat", "abcdefghijkl") {
+	if _, ok := comp.Authorize("UnboxTheCat", "abcdefghijkl"); ok {
 		t.Fatalf("Authorize() = true, wanted false")
 	}
 
 	//login to non-existed user
-	if comp.Authorize("not_exist", "abc") {
+	if _, ok := comp.Authorize("not_exist", "abc"); ok {
 		t.Fatalf("Authorize() = true, wanted false")
 	}
 
 	//missing username
-	if comp.Authorize("", "") {
+	if _, ok := comp.Authorize("", ""); ok {
 		t.Fatalf("Authorize() = true, wanted false")
 	}
 }

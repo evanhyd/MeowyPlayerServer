@@ -5,8 +5,6 @@ import (
 	"crypto/sha256"
 	"log"
 	"slices"
-
-	"github.com/google/uuid"
 )
 
 type Component struct {
@@ -34,22 +32,30 @@ func (c *Component) isValidUsername(username string) bool {
 	return kMinLen <= len(username) && len(username) <= kMaxLen
 }
 
+func (c *Component) generateHash(password string) ([]byte, []byte) {
+	salt := make([]byte, c.saltLength)
+	if _, err := rand.Read(salt); err != nil {
+		log.Println(err)
+	}
+	return c.computeHash([]byte(password), salt), salt
+}
+
 func (c *Component) computeHash(password []byte, salt []byte) []byte {
 	hash := sha256.Sum256(append(password, salt...))
 	return hash[:]
 }
 
-func (c *Component) Authorize(username string, password string) bool {
+func (c *Component) Authorize(username string, password string) (UserID, bool) {
 	if !c.isValidUsername(username) {
-		return false
+		return UserID{}, false
 	}
 
 	acc, exist := c.storage.load(username)
 	if !exist {
-		return false
+		return UserID{}, false
 	}
-	computedHash := c.computeHash([]byte(password), acc.salt)
-	return slices.Equal(acc.hash, computedHash)
+	computedHash := c.computeHash([]byte(password), acc.Salt)
+	return acc.UserID, slices.Equal(acc.Hash, computedHash)
 }
 
 func (c *Component) Register(username string, password string) bool {
@@ -57,12 +63,7 @@ func (c *Component) Register(username string, password string) bool {
 		return false
 	}
 
-	acc := Account{username: username, id: uuid.NewString()}
-	acc.salt = make([]byte, c.saltLength)
-	if _, err := rand.Read(acc.salt); err != nil {
-		log.Println(err)
-		return false
-	}
-	acc.hash = c.computeHash([]byte(password), acc.salt)
+	acc := Account{Username: username, UserID: NewUserID()}
+	acc.Hash, acc.Salt = c.generateHash(password)
 	return c.storage.store(acc)
 }

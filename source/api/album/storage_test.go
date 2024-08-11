@@ -1,12 +1,11 @@
 package album
 
 import (
+	"meowyplayerserver/api/account"
 	"path/filepath"
 	"slices"
 	"testing"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 func makeStubAlbumStorage(t *testing.T) albumStorage {
@@ -17,7 +16,7 @@ func makeStubAlbumStorage(t *testing.T) albumStorage {
 
 func makeGoodAlbum() Album {
 	return Album{
-		key:   AlbumKey(uuid.NewString()),
+		key:   newRandomAlbumKey(),
 		date:  time.Now().Round(time.Second),
 		title: "owo",
 		music: []Music{{
@@ -63,12 +62,13 @@ func TestAlbumStorage_UploadAndDownload(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	userID := account.NewUserID()
 	album1 := makeGoodAlbum()
-	if err := s.upload(album1); err != nil {
+	if err := s.upload(userID, album1); err != nil {
 		t.Fatal(err)
 	}
 
-	album2, err := s.download(album1.Key())
+	album2, err := s.download(userID, album1.Key())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,19 +81,9 @@ func TestAlbumStorage_DownloadNonExistedAlbum(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	album, err := s.download("nonExistedKey")
-	if err == nil {
-		t.Errorf("actual syncDownloadImpl %+v, expected %+v", album, "error")
-	}
-}
-
-func TestAlbumStorage_DownloadEmptyAlbum(t *testing.T) {
-	s := makeStubAlbumStorage(t)
-	if err := s.initialize(); err != nil {
-		t.Fatal(err)
-	}
-
-	album, err := s.download("")
+	userID := account.NewUserID()
+	albumKey := newRandomAlbumKey()
+	album, err := s.download(userID, albumKey)
 	if err == nil {
 		t.Errorf("actual syncDownloadImpl %+v, expected %+v", album, "error")
 	}

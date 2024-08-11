@@ -35,7 +35,7 @@ func (s *accountStorage) save() error {
 	s.fileLock.Lock()
 	defer s.fileLock.Unlock()
 
-	data, err := json.Marshal(&s.accounts)
+	data, err := json.Marshal(s.accounts)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (s *accountStorage) save() error {
 
 // Register an account. Return true if success.
 func (s *accountStorage) store(acc Account) bool {
-	if _, exist := s.accounts.LoadOrStore(acc.username, acc); exist {
+	if _, exist := s.accounts.LoadOrStore(acc.Username, acc); exist {
 		return false
 	}
 
