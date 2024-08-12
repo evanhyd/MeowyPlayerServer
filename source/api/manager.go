@@ -70,7 +70,6 @@ func (m *apiManager) logsHandler(w http.ResponseWriter, _ *http.Request) {
 
 func (m *apiManager) registerHandler(w http.ResponseWriter, r *http.Request) {
 	username, password, _ := r.BasicAuth()
-	log.Println("register:", username, password)
 	if !m.accountComponent.Register(username, password) {
 		http.Error(w, "username is too short or too long or already exists", http.StatusNotFound)
 	}
