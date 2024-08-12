@@ -45,7 +45,7 @@ func (c *Component) computeHash(password []byte, salt []byte) []byte {
 	return hash[:]
 }
 
-func (c *Component) Authorize(username string, password string) (UserID, bool) {
+func (c *Component) Authenticate(username string, password string) (UserID, bool) {
 	if !c.isValidUsername(username) {
 		return UserID{}, false
 	}

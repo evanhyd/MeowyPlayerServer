@@ -46,10 +46,9 @@ func (m *apiManager) Initialize() error {
 	return nil
 }
 
-func (m *apiManager) authorize(r *http.Request) (account.UserID, bool) {
-	username := r.URL.User.Username()
-	password, _ := r.URL.User.Password()
-	return m.accountComponent.Authorize(username, password)
+func (m *apiManager) authenticate(r *http.Request) (account.UserID, bool) {
+	username, password, _ := r.BasicAuth()
+	return m.accountComponent.Authenticate(username, password)
 }
 
 func (m *apiManager) statsHandler(w http.ResponseWriter, _ *http.Request) {
@@ -70,27 +69,24 @@ func (m *apiManager) logsHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (m *apiManager) registerHandler(w http.ResponseWriter, r *http.Request) {
-	username := r.URL.User.Username()
-	password, _ := r.URL.User.Password()
+	username, password, _ := r.BasicAuth()
 	if !m.accountComponent.Register(username, password) {
 		http.Error(w, "username is too short or too long or already exists", http.StatusNotFound)
 	}
 }
 
 func (m *apiManager) loginHandler(w http.ResponseWriter, r *http.Request) {
-	username := r.URL.User.Username()
-	password, _ := r.URL.User.Password()
-	if _, ok := m.accountComponent.Authorize(username, password); ok {
-		fmt.Fprintln(w, "authorized successfully")
+	if _, ok := m.authenticate(r); ok {
+		fmt.Fprintln(w, "login successfully")
 	} else {
-		http.Error(w, "failed to authorize", http.StatusNotFound)
+		http.Error(w, "failed to authenticate", http.StatusNotFound)
 	}
 }
 
 func (m *apiManager) uploadHandler(w http.ResponseWriter, r *http.Request) {
-	userID, ok := m.authorize(r)
+	userID, ok := m.authenticate(r)
 	if !ok {
-		http.Error(w, "failed to authorize", http.StatusNotFound)
+		http.Error(w, "failed to authenticate", http.StatusNotFound)
 		return
 	}
 
@@ -111,9 +107,9 @@ func (m *apiManager) uploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *apiManager) downloadHandler(w http.ResponseWriter, r *http.Request) {
-	userID, ok := m.authorize(r)
+	userID, ok := m.authenticate(r)
 	if !ok {
-		http.Error(w, "failed to authorize", http.StatusNotFound)
+		http.Error(w, "failed to authenticate", http.StatusNotFound)
 		return
 	}
 

@@ -37,7 +37,7 @@ func TestManager_Register(t *testing.T) {
 	}
 }
 
-func TestManager_Authorize(t *testing.T) {
+func TestManager_Authenticate(t *testing.T) {
 	comp := makeStubAccountComponent(t)
 	if err := comp.Initialize(); err != nil {
 		t.Fatal(err)
@@ -49,23 +49,23 @@ func TestManager_Authorize(t *testing.T) {
 	}
 
 	//normal login
-	if _, ok := comp.Authorize("UnboxTheCat", "test"); !ok {
-		t.Fatalf("Authorize() = false, wanted true")
+	if _, ok := comp.Authenticate("UnboxTheCat", "test"); !ok {
+		t.Fatalf("Authenticate() = false, wanted true")
 	}
 
 	//incorrect password
-	if _, ok := comp.Authorize("UnboxTheCat", "abcdefghijkl"); ok {
-		t.Fatalf("Authorize() = true, wanted false")
+	if _, ok := comp.Authenticate("UnboxTheCat", "abcdefghijkl"); ok {
+		t.Fatalf("Authenticate() = true, wanted false")
 	}
 
 	//login to non-existed user
-	if _, ok := comp.Authorize("not_exist", "abc"); ok {
-		t.Fatalf("Authorize() = true, wanted false")
+	if _, ok := comp.Authenticate("not_exist", "abc"); ok {
+		t.Fatalf("Authenticate() = true, wanted false")
 	}
 
 	//missing username
-	if _, ok := comp.Authorize("", ""); ok {
-		t.Fatalf("Authorize() = true, wanted false")
+	if _, ok := comp.Authenticate("", ""); ok {
+		t.Fatalf("Authenticate() = true, wanted false")
 	}
 }
 
