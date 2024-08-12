@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"meowyplayerserver/api/account"
 	"meowyplayerserver/api/album"
@@ -39,6 +40,7 @@ func (m *apiManager) Initialize() error {
 	m.loggerComponent.RegisterAPI("/stats", m.statsHandler)
 	m.loggerComponent.RegisterAPI("/logs", m.logsHandler)
 	m.loggerComponent.RegisterAPI("/register", m.registerHandler)
+	m.loggerComponent.RegisterAPI("/login", m.loginHandler)
 	m.loggerComponent.RegisterAPI("/upload", m.uploadHandler)
 	m.loggerComponent.RegisterAPI("/download", m.downloadHandler)
 	return nil
@@ -69,21 +71,26 @@ func (m *apiManager) logsHandler(w http.ResponseWriter, _ *http.Request) {
 
 func (m *apiManager) registerHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.URL.User.Username()
-	password, ok := r.URL.User.Password()
-	if !ok {
-		http.Error(w, "missing password field", http.StatusNotFound)
-		return
-	}
-
+	password, _ := r.URL.User.Password()
 	if !m.accountComponent.Register(username, password) {
 		http.Error(w, "username is too short or too long or already exists", http.StatusNotFound)
+	}
+}
+
+func (m *apiManager) loginHandler(w http.ResponseWriter, r *http.Request) {
+	username := r.URL.User.Username()
+	password, _ := r.URL.User.Password()
+	if _, ok := m.accountComponent.Authorize(username, password); ok {
+		fmt.Fprintln(w, "authorized successfully")
+	} else {
+		http.Error(w, "failed to authorize", http.StatusNotFound)
 	}
 }
 
 func (m *apiManager) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	userID, ok := m.authorize(r)
 	if !ok {
-		http.Error(w, "failed to authorize\n", http.StatusNotFound)
+		http.Error(w, "failed to authorize", http.StatusNotFound)
 		return
 	}
 
