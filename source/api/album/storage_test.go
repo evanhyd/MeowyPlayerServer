@@ -64,7 +64,7 @@ func TestAlbumStorage_UploadAndDownload(t *testing.T) {
 	}
 
 	userID := account.NewUserID()
-	if err := s.allocateStorage(userID); err != nil {
+	if err := s.allocate(userID); err != nil {
 		t.Fatal(err)
 	}
 	album1 := makeGoodAlbum()
@@ -86,7 +86,7 @@ func TestAlbumStorage_DownloadNonExistedAlbum(t *testing.T) {
 	}
 
 	userID := account.NewUserID()
-	if err := s.allocateStorage(userID); err != nil {
+	if err := s.allocate(userID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -104,7 +104,7 @@ func TestAlbumStorage_DownloadAllAlbumsEmpty(t *testing.T) {
 	}
 
 	userID := account.NewUserID()
-	if err := s.allocateStorage(userID); err != nil {
+	if err := s.allocate(userID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -125,7 +125,7 @@ func TestAlbumStorage_DownloadAllAlbumsTwo(t *testing.T) {
 	}
 
 	userID := account.NewUserID()
-	if err := s.allocateStorage(userID); err != nil {
+	if err := s.allocate(userID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -151,4 +151,69 @@ func TestAlbumStorage_DownloadAllAlbumsTwo(t *testing.T) {
 	}
 	expectAlbumEqual(t, &albums[0], &albums1[0])
 	expectAlbumEqual(t, &albums[1], &albums1[1])
+}
+
+func TestAlbumStorage_RemoveOneRemainsOne(t *testing.T) {
+	s := makeStubAlbumStorage(t)
+	if err := s.initialize(); err != nil {
+		t.Fatal(err)
+	}
+
+	userID := account.NewUserID()
+	if err := s.allocate(userID); err != nil {
+		t.Fatal(err)
+	}
+
+	//upload 2 albums
+	album1 := makeGoodAlbum()
+	if err := s.uploadAlbum(userID, album1); err != nil {
+		t.Fatal(err)
+	}
+	album2 := makeGoodAlbum()
+	if err := s.uploadAlbum(userID, album2); err != nil {
+		t.Fatal(err)
+	}
+	albums, err := s.getAllAlbums(userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(albums) != 2 {
+		t.Errorf("len(albums) = %v, wanted 2", len(albums))
+	}
+
+	//remove one
+	if err := s.removeAlbum(userID, album1.Key()); err != nil {
+		t.Fatal(err)
+	}
+	albums, err = s.getAllAlbums(userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(albums) != 1 {
+		t.Errorf("len(albums) = %v, wanted 1", len(albums))
+	}
+}
+
+func TestAlbumStorage_RemoveNonExisted(t *testing.T) {
+	s := makeStubAlbumStorage(t)
+	if err := s.initialize(); err != nil {
+		t.Fatal(err)
+	}
+
+	userID := account.NewUserID()
+	if err := s.allocate(userID); err != nil {
+		t.Fatal(err)
+	}
+
+	//remove one
+	if err := s.removeAlbum(userID, newRandomAlbumKey()); err != nil {
+		t.Fatal(err)
+	}
+	albums, err := s.getAllAlbums(userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(albums) != 0 {
+		t.Errorf("len(albums) = %v, wanted 0", len(albums))
+	}
 }

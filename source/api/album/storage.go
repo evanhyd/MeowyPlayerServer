@@ -44,7 +44,7 @@ func (s *albumStorage) albumPath(userID account.UserID, key AlbumKey) string {
 	return filepath.Join(s.userIDPath(userID), fmt.Sprintf("%v.json", key))
 }
 
-func (s *albumStorage) allocateStorage(userID account.UserID) error {
+func (s *albumStorage) allocate(userID account.UserID) error {
 	return os.MkdirAll(s.userIDPath(userID), 0700)
 }
 
@@ -93,6 +93,10 @@ func (s *albumStorage) loadAll(userID account.UserID) ([]Album, error) {
 	return albums, nil
 }
 
+func (s *albumStorage) remove(userID account.UserID, key AlbumKey) error {
+	return os.RemoveAll(s.albumPath(userID, key))
+}
+
 func (s *albumStorage) uploadAlbum(userID account.UserID, album Album) error {
 	var err error
 	readyC := make(chan struct{})
@@ -126,4 +130,15 @@ func (s *albumStorage) getAllAlbums(userID account.UserID) ([]Album, error) {
 	}
 	<-readyC
 	return albums, err
+}
+
+func (s *albumStorage) removeAlbum(userID account.UserID, key AlbumKey) error {
+	var err error
+	readyC := make(chan struct{})
+	s.requests <- func() {
+		err = s.remove(userID, key)
+		readyC <- struct{}{}
+	}
+	<-readyC
+	return err
 }

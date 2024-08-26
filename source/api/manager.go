@@ -44,6 +44,7 @@ func (m *apiManager) Initialize() error {
 	m.loggerComponent.RegisterAPI("/upload", m.uploadHandler)
 	m.loggerComponent.RegisterAPI("/download", m.downloadHandler)
 	m.loggerComponent.RegisterAPI("/downloadAll", m.downloadHandler)
+	m.loggerComponent.RegisterAPI("/remove", m.removeHandler)
 	return nil
 }
 
@@ -163,5 +164,28 @@ func (m *apiManager) downloadAllHandler(w http.ResponseWriter, r *http.Request) 
 	if err := json.NewEncoder(w).Encode(albums); err != nil {
 		log.Println(err)
 		http.Error(w, "failed to download album", http.StatusNotFound)
+	}
+}
+
+func (m *apiManager) removeHandler(w http.ResponseWriter, r *http.Request) {
+	userID, ok := m.authenticate(r)
+	if !ok {
+		http.Error(w, "failed to authenticate", http.StatusNotFound)
+		return
+	}
+
+	//get the album key
+	const kAlbumKeyParam = "albumKey"
+	key, err := album.ParseAlbumKey(r.URL.Query().Get(kAlbumKeyParam))
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "invalid album key", http.StatusNotFound)
+		return
+	}
+
+	if err := m.albumComponent.Remove(userID, key); err != nil {
+		log.Println(err)
+		http.Error(w, "failed to remove album", http.StatusNotFound)
+		return
 	}
 }

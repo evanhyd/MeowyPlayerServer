@@ -17,7 +17,7 @@ func (c *Component) Initialize() error {
 }
 
 func (c *Component) Register(userID account.UserID) error {
-	return c.storage.allocateStorage(userID)
+	return c.storage.allocate(userID)
 }
 
 func (c *Component) Upload(userID account.UserID, album Album) error {
@@ -30,4 +30,8 @@ func (c *Component) Download(userID account.UserID, key AlbumKey) (Album, error)
 
 func (c *Component) DownloadAll(userID account.UserID) ([]Album, error) {
 	return c.storage.getAllAlbums(userID)
+}
+
+func (c *Component) Remove(userID account.UserID, key AlbumKey) error {
+	return c.storage.removeAlbum(userID, key)
 }
