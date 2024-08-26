@@ -43,7 +43,7 @@ func (m *apiManager) Initialize() error {
 	m.loggerComponent.RegisterAPI("/login", m.loginHandler)
 	m.loggerComponent.RegisterAPI("/upload", m.uploadHandler)
 	m.loggerComponent.RegisterAPI("/download", m.downloadHandler)
-	m.loggerComponent.RegisterAPI("/downloadAll", m.downloadHandler)
+	m.loggerComponent.RegisterAPI("/downloadAll", m.downloadAllHandler)
 	m.loggerComponent.RegisterAPI("/remove", m.removeHandler)
 	return nil
 }
