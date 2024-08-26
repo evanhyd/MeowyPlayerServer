@@ -44,12 +44,13 @@ func (s *albumStorage) albumPath(userID account.UserID, key AlbumKey) string {
 	return filepath.Join(s.userIDPath(userID), fmt.Sprintf("%v.json", key))
 }
 
+func (s *albumStorage) allocateStorage(userID account.UserID) error {
+	return os.MkdirAll(s.userIDPath(userID), 0700)
+}
+
 func (s *albumStorage) store(userID account.UserID, album Album) error {
 	data, err := json.Marshal(album)
 	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(s.userIDPath(userID), 0700); err != nil {
 		return err
 	}
 	return os.WriteFile(s.albumPath(userID, album.Key()), data, 0600)
@@ -66,15 +67,44 @@ func (s *albumStorage) load(userID account.UserID, key AlbumKey) (Album, error) 
 	return album, err
 }
 
-func (s *albumStorage) upload(userID account.UserID, album Album) error {
-	respC := make(chan error)
-	s.requests <- func() {
-		respC <- s.store(userID, album)
+func (s *albumStorage) loadAll(userID account.UserID) ([]Album, error) {
+	const kFileExt = ".json"
+	userDir := s.userIDPath(userID)
+	entries, err := os.ReadDir(userDir)
+	if err != nil {
+		return nil, err
 	}
-	return <-respC
+
+	albums := make([]Album, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == kFileExt {
+			data, err := os.ReadFile(filepath.Join(userDir, entry.Name()))
+			if err != nil {
+				return nil, err
+			}
+
+			var album Album
+			if err := json.Unmarshal(data, &album); err != nil {
+				return nil, err
+			}
+			albums = append(albums, album)
+		}
+	}
+	return albums, nil
 }
 
-func (s *albumStorage) download(userID account.UserID, key AlbumKey) (Album, error) {
+func (s *albumStorage) uploadAlbum(userID account.UserID, album Album) error {
+	var err error
+	readyC := make(chan struct{})
+	s.requests <- func() {
+		err = s.store(userID, album)
+		readyC <- struct{}{}
+	}
+	<-readyC
+	return err
+}
+
+func (s *albumStorage) getAlbum(userID account.UserID, key AlbumKey) (Album, error) {
 	var album Album
 	var err error
 	readyC := make(chan struct{})
@@ -84,4 +114,16 @@ func (s *albumStorage) download(userID account.UserID, key AlbumKey) (Album, err
 	}
 	<-readyC
 	return album, err
+}
+
+func (s *albumStorage) getAllAlbums(userID account.UserID) ([]Album, error) {
+	var albums []Album
+	var err error
+	readyC := make(chan struct{})
+	s.requests <- func() {
+		albums, err = s.loadAll(userID)
+		readyC <- struct{}{}
+	}
+	<-readyC
+	return albums, err
 }

@@ -58,12 +58,12 @@ func (c *Component) Authenticate(username string, password string) (UserID, bool
 	return acc.UserID, slices.Equal(acc.Hash, computedHash)
 }
 
-func (c *Component) Register(username string, password string) bool {
+func (c *Component) Register(username string, password string) (UserID, bool) {
 	if !c.isValidUsername(username) {
-		return false
+		return UserID{}, false
 	}
 
 	acc := Account{Username: username, UserID: NewUserID()}
 	acc.Hash, acc.Salt = c.generateHash(password)
-	return c.storage.store(acc)
+	return acc.UserID, c.storage.store(acc)
 }

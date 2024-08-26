@@ -17,22 +17,22 @@ func TestManager_Register(t *testing.T) {
 	}
 
 	//normal registration
-	if !comp.Register("UnboxTheCat", "test") {
+	if _, ok := comp.Register("UnboxTheCat", "test"); !ok {
 		t.Error("Register() = false, expected true")
 	}
 
 	//username already exists
-	if comp.Register("UnboxTheCat", "test") {
+	if _, ok := comp.Register("UnboxTheCat", "test"); ok {
 		t.Error("Register() = true, expected false")
 	}
 
 	//username is too short
-	if comp.Register("", "test") {
+	if _, ok := comp.Register("", "test"); ok {
 		t.Error("Register() = true, expected false")
 	}
 
 	//username is too long
-	if comp.Register("0123456789abcdef0123456789abcdef", "test") {
+	if _, ok := comp.Register("0123456789abcdef0123456789abcdef", "test"); ok {
 		t.Error("Register() = true, expected false")
 	}
 }
@@ -44,7 +44,7 @@ func TestManager_Authenticate(t *testing.T) {
 	}
 
 	//normal registration
-	if !comp.Register("UnboxTheCat", "test") {
+	if _, ok := comp.Register("UnboxTheCat", "test"); !ok {
 		t.Error("Register() = false, expected true")
 	}
 

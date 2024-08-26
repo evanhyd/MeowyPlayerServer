@@ -4,6 +4,7 @@ import (
 	"meowyplayerserver/api/account"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 )
@@ -63,12 +64,15 @@ func TestAlbumStorage_UploadAndDownload(t *testing.T) {
 	}
 
 	userID := account.NewUserID()
+	if err := s.allocateStorage(userID); err != nil {
+		t.Fatal(err)
+	}
 	album1 := makeGoodAlbum()
-	if err := s.upload(userID, album1); err != nil {
+	if err := s.uploadAlbum(userID, album1); err != nil {
 		t.Fatal(err)
 	}
 
-	album2, err := s.download(userID, album1.Key())
+	album2, err := s.getAlbum(userID, album1.Key())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,9 +86,69 @@ func TestAlbumStorage_DownloadNonExistedAlbum(t *testing.T) {
 	}
 
 	userID := account.NewUserID()
-	albumKey := newRandomAlbumKey()
-	album, err := s.download(userID, albumKey)
-	if err == nil {
-		t.Errorf("actual syncDownloadImpl %+v, expected %+v", album, "error")
+	if err := s.allocateStorage(userID); err != nil {
+		t.Fatal(err)
 	}
+
+	albumKey := newRandomAlbumKey()
+	_, err := s.getAlbum(userID, albumKey)
+	if err == nil {
+		t.Errorf("getAlbum expected error")
+	}
+}
+
+func TestAlbumStorage_DownloadAllAlbumsEmpty(t *testing.T) {
+	s := makeStubAlbumStorage(t)
+	if err := s.initialize(); err != nil {
+		t.Fatal(err)
+	}
+
+	userID := account.NewUserID()
+	if err := s.allocateStorage(userID); err != nil {
+		t.Fatal(err)
+	}
+
+	albums, err := s.getAllAlbums(userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if l := len(albums); l != 0 {
+		t.Errorf("len(albums) = %v, wanted 0", l)
+	}
+}
+
+func TestAlbumStorage_DownloadAllAlbumsTwo(t *testing.T) {
+	s := makeStubAlbumStorage(t)
+	if err := s.initialize(); err != nil {
+		t.Fatal(err)
+	}
+
+	userID := account.NewUserID()
+	if err := s.allocateStorage(userID); err != nil {
+		t.Fatal(err)
+	}
+
+	albums := []Album{makeGoodAlbum(), makeGoodAlbum()}
+	slices.SortFunc(albums, func(lhs, rhs Album) int {
+		return strings.Compare(lhs.Key().String(), rhs.Key().String())
+	})
+
+	if err := s.uploadAlbum(userID, albums[0]); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.uploadAlbum(userID, albums[1]); err != nil {
+		t.Fatal(err)
+	}
+
+	albums1, err := s.getAllAlbums(userID)
+	if err != nil {
+		t.Errorf("getAllAlbum received error %v, wanted nil", err)
+	}
+
+	if len(albums) != len(albums1) {
+		t.Errorf("len(albums1) = %v, wanted %v", len(albums1), len(albums))
+	}
+	expectAlbumEqual(t, &albums[0], &albums1[0])
+	expectAlbumEqual(t, &albums[1], &albums1[1])
 }

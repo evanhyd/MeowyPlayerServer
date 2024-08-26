@@ -43,6 +43,7 @@ func (m *apiManager) Initialize() error {
 	m.loggerComponent.RegisterAPI("/login", m.loginHandler)
 	m.loggerComponent.RegisterAPI("/upload", m.uploadHandler)
 	m.loggerComponent.RegisterAPI("/download", m.downloadHandler)
+	m.loggerComponent.RegisterAPI("/downloadAll", m.downloadHandler)
 	return nil
 }
 
@@ -70,8 +71,15 @@ func (m *apiManager) logsHandler(w http.ResponseWriter, _ *http.Request) {
 
 func (m *apiManager) registerHandler(w http.ResponseWriter, r *http.Request) {
 	username, password, _ := r.BasicAuth()
-	if !m.accountComponent.Register(username, password) {
+
+	userID, ok := m.accountComponent.Register(username, password)
+	if !ok {
 		http.Error(w, "username is too short or too long or already exists", http.StatusNotFound)
+	}
+
+	if err := m.albumComponent.Register(userID); err != nil {
+		log.Println(err)
+		http.Error(w, "failed to allocate album storage", http.StatusNotFound)
 	}
 }
 
@@ -121,7 +129,7 @@ func (m *apiManager) downloadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//downlaod from the storage
+	//get the album from the storage
 	album, err := m.albumComponent.Download(userID, key)
 	if err != nil {
 		log.Println(err)
@@ -131,6 +139,28 @@ func (m *apiManager) downloadHandler(w http.ResponseWriter, r *http.Request) {
 
 	//send to the client
 	if err := json.NewEncoder(w).Encode(album); err != nil {
+		log.Println(err)
+		http.Error(w, "failed to download album", http.StatusNotFound)
+	}
+}
+
+func (m *apiManager) downloadAllHandler(w http.ResponseWriter, r *http.Request) {
+	userID, ok := m.authenticate(r)
+	if !ok {
+		http.Error(w, "failed to authenticate", http.StatusNotFound)
+		return
+	}
+
+	//get all albums from the storage
+	albums, err := m.albumComponent.DownloadAll(userID)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "failed to download all albums", http.StatusNotFound)
+		return
+	}
+
+	//send to the client
+	if err := json.NewEncoder(w).Encode(albums); err != nil {
 		log.Println(err)
 		http.Error(w, "failed to download album", http.StatusNotFound)
 	}
