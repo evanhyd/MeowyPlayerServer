@@ -10,6 +10,10 @@ import (
 	"net/http"
 )
 
+const (
+	kAlbumKeyParam = "albumKey"
+)
+
 type apiManager struct {
 	loggerComponent  logger.Component
 	accountComponent account.Component
@@ -123,8 +127,7 @@ func (m *apiManager) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//get the album key
-	const kAlbumKeyParam = "albumKey"
-	key, err := album.ParseAlbumKey(r.URL.Query().Get(kAlbumKeyParam))
+	key, err := album.ParseAlbumKey(r.PostFormValue(kAlbumKeyParam))
 	if err != nil {
 		http.Error(w, "invalid album key", http.StatusNotFound)
 		return
@@ -175,8 +178,7 @@ func (m *apiManager) removeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//get the album key
-	const kAlbumKeyParam = "albumKey"
-	key, err := album.ParseAlbumKey(r.URL.Query().Get(kAlbumKeyParam))
+	key, err := album.ParseAlbumKey(r.PostFormValue(kAlbumKeyParam))
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "invalid album key", http.StatusNotFound)
